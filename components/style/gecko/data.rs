@@ -26,7 +26,7 @@ pub struct PerDocumentStyleDataImpl {
     pub stylist: Arc<Stylist>,
 
     /// List of stylesheets, mirrored from Gecko.
-    pub stylesheets: Vec<Arc<Stylesheet>>,
+    pub stylesheets: Vec<Arc<RwLock<Stylesheet>>>,
 
     /// Whether the stylesheets list above has changed since the last restyle.
     pub stylesheets_changed: bool,

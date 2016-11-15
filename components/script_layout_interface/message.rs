@@ -10,6 +10,7 @@ use gfx_traits::Epoch;
 use ipc_channel::ipc::{IpcReceiver, IpcSender};
 use msg::constellation_msg::PipelineId;
 use net_traits::image_cache_thread::ImageCacheThread;
+use parking_lot::RwLock;
 use profile_traits::mem::ReportsChan;
 use rpc::LayoutRPC;
 use script_traits::{ConstellationControlMsg, LayoutControlMsg};
@@ -25,7 +26,7 @@ use url::Url;
 /// Asynchronous messages that script can send to layout.
 pub enum Msg {
     /// Adds the given stylesheet to the document.
-    AddStylesheet(Arc<Stylesheet>),
+    AddStylesheet(Arc<RwLock<Stylesheet>>),
 
     /// Puts a document into quirks mode, causing the quirks mode stylesheet to be loaded.
     SetQuirksMode,
@@ -116,7 +117,7 @@ pub struct ScriptReflow {
     /// The document node.
     pub document: TrustedNodeAddress,
     /// The document's list of stylesheets.
-    pub document_stylesheets: Vec<Arc<Stylesheet>>,
+    pub document_stylesheets: Vec<Arc<RwLock<Stylesheet>>>,
     /// Whether the document's stylesheets have changed since the last script reflow.
     pub stylesheets_changed: bool,
     /// The current window size.

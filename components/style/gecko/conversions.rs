@@ -20,10 +20,10 @@ use properties::{ComputedValues, PropertyDeclarationBlock};
 use stylesheets::Stylesheet;
 use values::computed::{CalcLengthOrPercentage, Gradient, Image, LengthOrPercentage, LengthOrPercentageOrAuto};
 
-unsafe impl HasFFI for Stylesheet {
+unsafe impl HasFFI for RwLock<Stylesheet> {
     type FFIType = RawServoStyleSheet;
 }
-unsafe impl HasArcFFI for Stylesheet {}
+unsafe impl HasArcFFI for RwLock<Stylesheet> {}
 unsafe impl HasFFI for ComputedValues {
     type FFIType = ServoComputedValues;
 }

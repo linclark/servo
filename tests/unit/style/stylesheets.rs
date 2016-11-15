@@ -259,7 +259,7 @@ fn test_parse_stylesheet() {
         ],
     };
 
-    assert_eq!(format!("{:#?}", stylesheet), format!("{:#?}", expected));
+    assert_eq!(format!("{:#?}", *stylesheet.read()), format!("{:#?}", expected));
 }
 
 struct CSSError {

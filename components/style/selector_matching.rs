@@ -129,7 +129,7 @@ impl Stylist {
     }
 
     pub fn update(&mut self,
-                  doc_stylesheets: &[Arc<Stylesheet>],
+                  doc_stylesheets: &[Arc<RwLock<Stylesheet>>],
                   ua_stylesheets: Option<&UserAgentStylesheets>,
                   stylesheets_changed: bool) -> bool {
         if !(self.is_device_dirty || stylesheets_changed) {
@@ -161,7 +161,7 @@ impl Stylist {
         }
 
         for ref stylesheet in doc_stylesheets.iter() {
-            self.add_stylesheet(stylesheet);
+            self.add_stylesheet(&stylesheet.read());
         }
 
         self.is_device_dirty = false;
@@ -362,7 +362,7 @@ impl Stylist {
         Some((Arc::new(computed), rule_node))
     }
 
-    pub fn set_device(&mut self, mut device: Device, stylesheets: &[Arc<Stylesheet>]) {
+    pub fn set_device(&mut self, mut device: Device, stylesheets: &[Arc<RwLock<Stylesheet>>]) {
         let cascaded_rule = ViewportRule {
             declarations: viewport::Cascade::from_stylesheets(stylesheets, &device).finish(),
         };
@@ -388,7 +388,7 @@ impl Stylist {
             false
         }
         self.is_device_dirty |= stylesheets.iter().any(|stylesheet| {
-            mq_eval_changed(&stylesheet.rules, &self.device, &device)
+            mq_eval_changed(&stylesheet.read().rules, &self.device, &device)
         });
 
         self.device = device;

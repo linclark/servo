@@ -29,7 +29,7 @@ use style::viewport::ViewportRule;
 pub struct HTMLMetaElement {
     htmlelement: HTMLElement,
     #[ignore_heap_size_of = "Arc"]
-    stylesheet: DOMRefCell<Option<Arc<Stylesheet>>>,
+    stylesheet: DOMRefCell<Option<Arc<RwLock<Stylesheet>>>>,
 }
 
 impl HTMLMetaElement {
@@ -51,7 +51,7 @@ impl HTMLMetaElement {
                            HTMLMetaElementBinding::Wrap)
     }
 
-    pub fn get_stylesheet(&self) -> Option<Arc<Stylesheet>> {
+    pub fn get_stylesheet(&self) -> Option<Arc<RwLock<Stylesheet>>> {
         self.stylesheet.borrow().clone()
     }
 
@@ -80,14 +80,14 @@ impl HTMLMetaElement {
             let content = content.value();
             if !content.is_empty() {
                 if let Some(translated_rule) = ViewportRule::from_meta(&**content) {
-                    *self.stylesheet.borrow_mut() = Some(Arc::new(Stylesheet {
+                    *self.stylesheet.borrow_mut() = Some(Arc::new(RwLock::new(Stylesheet {
                         rules: vec![CssRule::Viewport(Arc::new(RwLock::new(translated_rule)))],
                         origin: Origin::Author,
                         media: Default::default(),
                         // Viewport constraints are always recomputed on resize; they don't need to
                         // force all styles to be recomputed.
                         dirty_on_viewport_size_change: false,
-                    }));
+                    })));
                     let doc = document_from_node(self);
                     doc.invalidate_stylesheets();
                 }

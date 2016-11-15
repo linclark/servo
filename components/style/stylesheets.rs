@@ -46,7 +46,7 @@ pub struct Stylesheet {
     /// cascading order)
     pub rules: Vec<CssRule>,
     /// List of media associated with the Stylesheet.
-    pub media: MediaList,
+    pub media: Arc<RwLock<MediaList>>,
     pub origin: Origin,
     pub dirty_on_viewport_size_change: bool,
 }
@@ -127,7 +127,7 @@ impl Stylesheet {
             input: I, base_url: Url, protocol_encoding_label: Option<&str>,
             environment_encoding: Option<EncodingRef>, origin: Origin,
             error_reporter: Box<ParseErrorReporter + Send>,
-            extra_data: ParserContextExtraData) -> Stylesheet {
+            extra_data: ParserContextExtraData) -> Arc<RwLock<Stylesheet>> {
         let mut bytes = vec![];
         // TODO: incremental decoding and tokenization/parsing
         for chunk in input {
@@ -144,7 +144,7 @@ impl Stylesheet {
                       environment_encoding: Option<EncodingRef>,
                       origin: Origin, error_reporter: Box<ParseErrorReporter + Send>,
                       extra_data: ParserContextExtraData)
-                      -> Stylesheet {
+                      -> Arc<RwLock<Stylesheet>> {
         // TODO: bytes.as_slice could be bytes.container_as_bytes()
         let (string, _) = decode_stylesheet_bytes(
             bytes, protocol_encoding_label, environment_encoding);
@@ -153,7 +153,7 @@ impl Stylesheet {
 
     pub fn from_str(css: &str, base_url: Url, origin: Origin,
                     error_reporter: Box<ParseErrorReporter + Send>,
-                    extra_data: ParserContextExtraData) -> Stylesheet {
+                    extra_data: ParserContextExtraData) -> Arc<RwLock<Stylesheet>> {
         let rule_parser = TopLevelRuleParser {
             context: ParserContext::new_with_extra_data(origin, &base_url, error_reporter.clone(),
                                                         extra_data),
@@ -178,18 +178,18 @@ impl Stylesheet {
             }
         }
 
-        Stylesheet {
+        Arc::new(RwLock::new(Stylesheet {
             origin: origin,
             rules: rules,
-            media: Default::default(),
+            media: Arc::new(RwLock::new(Default::default())),
             dirty_on_viewport_size_change:
                 input.seen_viewport_percentages(),
-        }
+        }))
     }
 
     /// Set the MediaList associated with the style-sheet.
     pub fn set_media(&mut self, media: MediaList) {
-        self.media = media;
+        *self.media.write() = media;
     }
 
     /// Returns whether the style-sheet applies for the current device depending
@@ -197,7 +197,7 @@ impl Stylesheet {
     ///
     /// Always true if no associated MediaList exists.
     pub fn is_effective_for_device(&self, device: &Device) -> bool {
-        self.media.evaluate(device)
+        self.media.read().evaluate(device)
     }
 
     /// Return an iterator over the effective rules within the style-sheet, as

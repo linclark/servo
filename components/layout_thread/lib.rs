@@ -621,8 +621,8 @@ impl LayoutThread {
                                      possibly_locked_rw_data: &mut RwData<'a, 'b>)
                                      -> bool {
         match request {
-            Msg::AddStylesheet(style_info) => {
-                self.handle_add_stylesheet(style_info, possibly_locked_rw_data)
+            Msg::AddStylesheet(stylesheet) => {
+                self.handle_add_stylesheet(&stylesheet.read(), possibly_locked_rw_data)
             }
             Msg::SetQuirksMode => self.handle_set_quirks_mode(possibly_locked_rw_data),
             Msg::GetRPC(response_chan) => {
@@ -766,14 +766,14 @@ impl LayoutThread {
     }
 
     fn handle_add_stylesheet<'a, 'b>(&self,
-                                     stylesheet: Arc<Stylesheet>,
+                                     stylesheet: &Stylesheet,
                                      possibly_locked_rw_data: &mut RwData<'a, 'b>) {
         // Find all font-face rules and notify the font cache of them.
         // GWTODO: Need to handle unloading web fonts.
 
         let rw_data = possibly_locked_rw_data.lock();
         if stylesheet.is_effective_for_device(&rw_data.stylist.device) {
-            add_font_face_rules(&*stylesheet,
+            add_font_face_rules(stylesheet,
                                 &rw_data.stylist.device,
                                 &self.font_cache_thread,
                                 &self.font_cache_sender,
@@ -1062,7 +1062,7 @@ impl LayoutThread {
                        .send(ConstellationMsg::ViewportConstrained(self.id, constraints))
                        .unwrap();
             }
-            if data.document_stylesheets.iter().any(|sheet| sheet.dirty_on_viewport_size_change) {
+            if data.document_stylesheets.iter().any(|sheet| sheet.read().dirty_on_viewport_size_change) {
                 let mut iter = node.traverse_preorder();
 
                 let mut next = iter.next();
@@ -1506,14 +1506,15 @@ fn get_root_flow_background_color(flow: &mut Flow) -> webrender_traits::ColorF {
 fn get_ua_stylesheets() -> Result<UserAgentStylesheets, &'static str> {
     fn parse_ua_stylesheet(filename: &'static str) -> Result<Stylesheet, &'static str> {
         let res = try!(read_resource_file(filename).map_err(|_| filename));
-        Ok(Stylesheet::from_bytes(
+        let arc = Stylesheet::from_bytes(
             &res,
             Url::parse(&format!("chrome://resources/{:?}", filename)).unwrap(),
             None,
             None,
             Origin::UserAgent,
             Box::new(StdoutErrorReporter),
-            ParserContextExtraData::default()))
+            ParserContextExtraData::default());
+        Ok(Arc::try_unwrap(arc).unwrap().into_inner())
     }
 
     let mut user_or_user_agent_stylesheets = vec!();
@@ -1523,9 +1524,10 @@ fn get_ua_stylesheets() -> Result<UserAgentStylesheets, &'static str> {
         user_or_user_agent_stylesheets.push(try!(parse_ua_stylesheet(filename)));
     }
     for &(ref contents, ref url) in &opts::get().user_stylesheets {
-        user_or_user_agent_stylesheets.push(Stylesheet::from_bytes(
+        let arc = Stylesheet::from_bytes(
             &contents, url.clone(), None, None, Origin::User, Box::new(StdoutErrorReporter),
-            ParserContextExtraData::default()));
+            ParserContextExtraData::default());
+        user_or_user_agent_stylesheets.push(Arc::try_unwrap(arc).unwrap().into_inner());
     }
 
     let quirks_mode_stylesheet = try!(parse_ua_stylesheet("quirks-mode.css"));

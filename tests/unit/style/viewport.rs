@@ -19,13 +19,13 @@ use url::Url;
 
 macro_rules! stylesheet {
     ($css:expr, $origin:ident, $error_reporter:expr) => {
-        Box::new(Stylesheet::from_str(
+        Stylesheet::from_str(
             $css,
             Url::parse("http://localhost").unwrap(),
             Origin::$origin,
             $error_reporter,
             ParserContextExtraData::default()
-        ))
+        )
     }
 }
 
@@ -38,7 +38,7 @@ fn test_viewport_rule<F>(css: &str,
                              ::util::prefs::PrefValue::Boolean(true));
     let stylesheet = stylesheet!(css, Author, Box::new(CSSErrorReporterTest));
     let mut rule_count = 0;
-    stylesheet.effective_viewport_rules(&device, |rule| {
+    stylesheet.read().effective_viewport_rules(&device, |rule| {
         rule_count += 1;
         callback(&rule.declarations, css);
     });

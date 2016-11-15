@@ -29,7 +29,7 @@ fn test_media_rule<F>(css: &str, callback: F) where F: Fn(&MediaList, &str) {
     let stylesheet = Stylesheet::from_str(css, url, Origin::Author, Box::new(CSSErrorReporterTest),
                                           ParserContextExtraData::default());
     let mut rule_count = 0;
-    media_queries(&stylesheet.rules, &mut |mq| {
+    media_queries(&stylesheet.read().rules, &mut |mq| {
         rule_count += 1;
         callback(mq, css);
     });
@@ -52,7 +52,7 @@ fn media_query_test(device: &Device, css: &str, expected_rule_count: usize) {
     let ss = Stylesheet::from_str(css, url, Origin::Author, Box::new(CSSErrorReporterTest),
                                   ParserContextExtraData::default());
     let mut rule_count = 0;
-    ss.effective_style_rules(device, |_| rule_count += 1);
+    ss.read().effective_style_rules(device, |_| rule_count += 1);
     assert!(rule_count == expected_rule_count, css.to_owned());
 }
 

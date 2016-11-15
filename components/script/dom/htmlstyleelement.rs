@@ -15,6 +15,7 @@ use dom::htmlelement::HTMLElement;
 use dom::node::{ChildrenMutation, Node, document_from_node, window_from_node};
 use dom::virtualmethods::VirtualMethods;
 use html5ever_atoms::LocalName;
+use parking_lot::RwLock;
 use script_layout_interface::message::Msg;
 use std::sync::Arc;
 use style::media_queries::parse_media_query_list;
@@ -25,7 +26,7 @@ use style::stylesheets::{Stylesheet, Origin};
 pub struct HTMLStyleElement {
     htmlelement: HTMLElement,
     #[ignore_heap_size_of = "Arc"]
-    stylesheet: DOMRefCell<Option<Arc<Stylesheet>>>,
+    stylesheet: DOMRefCell<Option<Arc<RwLock<Stylesheet>>>>,
 }
 
 impl HTMLStyleElement {
@@ -62,11 +63,10 @@ impl HTMLStyleElement {
         };
 
         let data = node.GetTextContent().expect("Element.textContent must be a string");
-        let mut sheet = Stylesheet::from_str(&data, url, Origin::Author, win.css_error_reporter(),
-                                             ParserContextExtraData::default());
+        let sheet = Stylesheet::from_str(&data, url, Origin::Author, win.css_error_reporter(),
+                                         ParserContextExtraData::default());
         let mut css_parser = CssParser::new(&mq_str);
-        sheet.set_media(parse_media_query_list(&mut css_parser));
-        let sheet = Arc::new(sheet);
+        sheet.write().set_media(parse_media_query_list(&mut css_parser));
 
         win.layout_chan().send(Msg::AddStylesheet(sheet.clone())).unwrap();
         *self.stylesheet.borrow_mut() = Some(sheet);
@@ -74,7 +74,7 @@ impl HTMLStyleElement {
         doc.invalidate_stylesheets();
     }
 
-    pub fn get_stylesheet(&self) -> Option<Arc<Stylesheet>> {
+    pub fn get_stylesheet(&self) -> Option<Arc<RwLock<Stylesheet>>> {
         self.stylesheet.borrow().clone()
     }
 }

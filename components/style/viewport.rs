@@ -12,6 +12,7 @@ use cssparser::{AtRuleParser, DeclarationListParser, DeclarationParser, Parser, 
 use euclid::scale_factor::ScaleFactor;
 use euclid::size::{Size2D, TypedSize2D};
 use media_queries::Device;
+use parking_lot::RwLock;
 use parser::{ParserContext, log_css_error};
 use properties::ComputedValues;
 use std::ascii::AsciiExt;
@@ -503,10 +504,10 @@ impl Cascade {
     }
 
     pub fn from_stylesheets<'a, I>(stylesheets: I, device: &Device) -> Self
-    where I: IntoIterator, I::Item: AsRef<Stylesheet> {
+    where I: IntoIterator, I::Item: AsRef<RwLock<Stylesheet>> {
         let mut cascade = Self::new();
         for stylesheet in stylesheets {
-            stylesheet.as_ref().effective_viewport_rules(device, |rule| {
+            stylesheet.as_ref().read().effective_viewport_rules(device, |rule| {
                 for declaration in &rule.declarations {
                     cascade.add(Cow::Borrowed(declaration))
                 }

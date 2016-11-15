@@ -33,6 +33,7 @@ use ipc_channel::router::ROUTER;
 use net_traits::{FetchResponseListener, FetchMetadata, Metadata, NetworkError, ReferrerPolicy};
 use net_traits::request::{CredentialsMode, Destination, RequestInit, Type as RequestType};
 use network_listener::{NetworkListener, PreInvoke};
+use parking_lot::RwLock;
 use script_layout_interface::message::Msg;
 use script_traits::{MozBrowserEvent, ScriptMsg as ConstellationMsg};
 use std::ascii::AsciiExt;
@@ -55,7 +56,7 @@ pub struct HTMLLinkElement {
     htmlelement: HTMLElement,
     rel_list: MutNullableHeap<JS<DOMTokenList>>,
     #[ignore_heap_size_of = "Arc"]
-    stylesheet: DOMRefCell<Option<Arc<Stylesheet>>>,
+    stylesheet: DOMRefCell<Option<Arc<RwLock<Stylesheet>>>>,
 
     /// https://html.spec.whatwg.org/multipage/#a-style-sheet-that-is-blocking-scripts
     parser_inserted: Cell<bool>,
@@ -82,7 +83,7 @@ impl HTMLLinkElement {
                            HTMLLinkElementBinding::Wrap)
     }
 
-    pub fn get_stylesheet(&self) -> Option<Arc<Stylesheet>> {
+    pub fn get_stylesheet(&self) -> Option<Arc<RwLock<Stylesheet>>> {
         self.stylesheet.borrow().clone()
     }
 }
@@ -355,12 +356,11 @@ impl FetchResponseListener for StylesheetContext {
 
             let win = window_from_node(&*elem);
 
-            let mut sheet = Stylesheet::from_bytes(&data, final_url, protocol_encoding_label,
-                                                   Some(environment_encoding), Origin::Author,
-                                                   win.css_error_reporter(),
-                                                   ParserContextExtraData::default());
-            sheet.set_media(self.media.take().unwrap());
-            let sheet = Arc::new(sheet);
+            let sheet = Stylesheet::from_bytes(&data, final_url, protocol_encoding_label,
+                                               Some(environment_encoding), Origin::Author,
+                                               win.css_error_reporter(),
+                                               ParserContextExtraData::default());
+            sheet.write().set_media(self.media.take().unwrap());
 
             let win = window_from_node(&*elem);
             win.layout_chan().send(Msg::AddStylesheet(sheet.clone())).unwrap();

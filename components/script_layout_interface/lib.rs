@@ -31,6 +31,7 @@ extern crate libc;
 extern crate log;
 extern crate msg;
 extern crate net_traits;
+extern crate parking_lot;
 extern crate profile_traits;
 extern crate range;
 extern crate script_traits;

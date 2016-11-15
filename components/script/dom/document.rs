@@ -104,6 +104,7 @@ use net_traits::request::RequestInit;
 use net_traits::response::HttpsState;
 use num_traits::ToPrimitive;
 use origin::Origin;
+use parking_lot::RwLock;
 use script_layout_interface::message::{Msg, ReflowQueryType};
 use script_thread::{MainThreadScriptMsg, Runnable};
 use script_traits::{AnimationState, CompositorEvent, MouseButton, MouseEventType, MozBrowserEvent};
@@ -155,7 +156,7 @@ enum ParserBlockedByScript {
 struct StylesheetInDocument {
     node: JS<Node>,
     #[ignore_heap_size_of = "Arc"]
-    stylesheet: Arc<Stylesheet>,
+    stylesheet: Arc<RwLock<Stylesheet>>,
 }
 
 // https://dom.spec.whatwg.org/#document
@@ -1911,7 +1912,7 @@ impl Document {
     }
 
     /// Returns the list of stylesheets associated with nodes in the document.
-    pub fn stylesheets(&self) -> Vec<Arc<Stylesheet>> {
+    pub fn stylesheets(&self) -> Vec<Arc<RwLock<Stylesheet>>> {
         {
             let mut stylesheets = self.stylesheets.borrow_mut();
             if stylesheets.is_none() {
