@@ -127,15 +127,17 @@ impl Stylesheet {
                       base_url: Url,
                       protocol_encoding_label: Option<&str>,
                       environment_encoding: Option<EncodingRef>,
-                      origin: Origin, error_reporter: Box<ParseErrorReporter + Send>,
+                      origin: Origin,
+                      media: MediaList,
+                      error_reporter: Box<ParseErrorReporter + Send>,
                       extra_data: ParserContextExtraData)
                       -> Arc<RwLock<Stylesheet>> {
         let (string, _) = decode_stylesheet_bytes(
             bytes, protocol_encoding_label, environment_encoding);
-        Stylesheet::from_str(&string, base_url, origin, error_reporter, extra_data)
+        Stylesheet::from_str(&string, base_url, origin, media, error_reporter, extra_data)
     }
 
-    pub fn from_str(css: &str, base_url: Url, origin: Origin,
+    pub fn from_str(css: &str, base_url: Url, origin: Origin, media: MediaList,
                     error_reporter: Box<ParseErrorReporter + Send>,
                     extra_data: ParserContextExtraData) -> Arc<RwLock<Stylesheet>> {
         let rule_parser = TopLevelRuleParser {
@@ -165,15 +167,10 @@ impl Stylesheet {
         Arc::new(RwLock::new(Stylesheet {
             origin: origin,
             rules: rules,
-            media: Arc::new(RwLock::new(Default::default())),
+            media: Arc::new(RwLock::new(media)),
             dirty_on_viewport_size_change:
                 input.seen_viewport_percentages(),
         }))
-    }
-
-    /// Set the MediaList associated with the style-sheet.
-    pub fn set_media(&mut self, media: MediaList) {
-        *self.media.write() = media;
     }
 
     /// Returns whether the style-sheet applies for the current device depending

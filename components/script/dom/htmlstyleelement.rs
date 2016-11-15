@@ -63,10 +63,9 @@ impl HTMLStyleElement {
         };
 
         let data = node.GetTextContent().expect("Element.textContent must be a string");
-        let sheet = Stylesheet::from_str(&data, url, Origin::Author, win.css_error_reporter(),
+        let mq = parse_media_query_list(&mut CssParser::new(&mq_str));
+        let sheet = Stylesheet::from_str(&data, url, Origin::Author, mq, win.css_error_reporter(),
                                          ParserContextExtraData::default());
-        let mut css_parser = CssParser::new(&mq_str);
-        sheet.write().set_media(parse_media_query_list(&mut css_parser));
 
         win.layout_chan().send(Msg::AddStylesheet(sheet.clone())).unwrap();
         *self.stylesheet.borrow_mut() = Some(sheet);

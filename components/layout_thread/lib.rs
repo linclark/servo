@@ -1512,6 +1512,7 @@ fn get_ua_stylesheets() -> Result<UserAgentStylesheets, &'static str> {
             None,
             None,
             Origin::UserAgent,
+            Default::default(),
             Box::new(StdoutErrorReporter),
             ParserContextExtraData::default());
         Ok(Arc::try_unwrap(arc).unwrap().into_inner())
@@ -1525,8 +1526,8 @@ fn get_ua_stylesheets() -> Result<UserAgentStylesheets, &'static str> {
     }
     for &(ref contents, ref url) in &opts::get().user_stylesheets {
         let arc = Stylesheet::from_bytes(
-            &contents, url.clone(), None, None, Origin::User, Box::new(StdoutErrorReporter),
-            ParserContextExtraData::default());
+            &contents, url.clone(), None, None, Origin::User, Default::default(),
+            Box::new(StdoutErrorReporter), ParserContextExtraData::default());
         user_or_user_agent_stylesheets.push(Arc::try_unwrap(arc).unwrap().into_inner());
     }
 

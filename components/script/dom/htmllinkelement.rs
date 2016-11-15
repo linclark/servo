@@ -358,9 +358,9 @@ impl FetchResponseListener for StylesheetContext {
 
             let sheet = Stylesheet::from_bytes(&data, final_url, protocol_encoding_label,
                                                Some(environment_encoding), Origin::Author,
+                                               self.media.take().unwrap(),
                                                win.css_error_reporter(),
                                                ParserContextExtraData::default());
-            sheet.write().set_media(self.media.take().unwrap());
 
             let win = window_from_node(&*elem);
             win.layout_chan().send(Msg::AddStylesheet(sheet.clone())).unwrap();
