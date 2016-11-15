@@ -123,21 +123,6 @@ pub struct StyleRule {
 
 
 impl Stylesheet {
-    pub fn from_bytes_iter<I: Iterator<Item=Vec<u8>>>(
-            input: I, base_url: Url, protocol_encoding_label: Option<&str>,
-            environment_encoding: Option<EncodingRef>, origin: Origin,
-            error_reporter: Box<ParseErrorReporter + Send>,
-            extra_data: ParserContextExtraData) -> Arc<RwLock<Stylesheet>> {
-        let mut bytes = vec![];
-        // TODO: incremental decoding and tokenization/parsing
-        for chunk in input {
-            bytes.extend_from_slice(&chunk)
-        }
-        Stylesheet::from_bytes(&bytes, base_url, protocol_encoding_label,
-                               environment_encoding, origin, error_reporter,
-                               extra_data)
-    }
-
     pub fn from_bytes(bytes: &[u8],
                       base_url: Url,
                       protocol_encoding_label: Option<&str>,
@@ -145,7 +130,6 @@ impl Stylesheet {
                       origin: Origin, error_reporter: Box<ParseErrorReporter + Send>,
                       extra_data: ParserContextExtraData)
                       -> Arc<RwLock<Stylesheet>> {
-        // TODO: bytes.as_slice could be bytes.container_as_bytes()
         let (string, _) = decode_stylesheet_bytes(
             bytes, protocol_encoding_label, environment_encoding);
         Stylesheet::from_str(&string, base_url, origin, error_reporter, extra_data)
